@@ -28,7 +28,6 @@ class Dnspod:
         data = {"login_token": token, "format": "json", "domain_id": domain_id}
         r = requests.post(self.base_url + "/Record.List",
                 data = data, headers = self.headers)
-        print(r.text)
         self.records = r.json()
 
 
