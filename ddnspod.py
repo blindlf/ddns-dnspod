@@ -18,29 +18,56 @@ class Dnspod:
         self.domain_id = domain_id
 
         # Get records
-        # TODO
+        data = {"login_token": token, "format": "json", "domain_id": domain_id}
+        r = requests.post("https://dnsapi.cn/Record.List", data = data)
+        self.records = r.json()
 
 
-    def get_ip(self, domain, rtype='A'):
+    def _find(self, domain, rtype):
+        for r in self.records["records"]:
+            if domain == r["name"] and rtype == r["type"]:
+                return r
+        return None
+
+
+    def get(self, domain, rtype='A'):
+        r = self._find(domain, rtype)
+        if not r:
+            return
+        return r["value"]
+
+
+    def update(self, domain, rtype='A'):
         # TODO
         pass
 
 
-    def update_ip(self, domain, rtype='A'):
-        # TODO
-        pass
-
-
-def get_ipv4_wan():
+def get_wan_ipv4():
     headers = {"User-Agent": "curl/python-requests"}
     r = requests.get('https://ifconfig.co', headers=headers, timeout=20)
-    return r.text
+    return r.text.strip()
 
 
-def ddns():
-    ip = get_ipv4_wan()
-    logger.info(f"WAN IP {ip}")
+def ddns(token, domain_id):
+    dnspod = Dnspod(token, domain_id)
+    logger.info("DNSPOD")
+    logger.info(dnspod.records)
+    ipdns = dnspod.get("@")
+
+    ipwan = get_wan_ipv4()
+
+    if ipdns != ipwan:
+        logger.info(f"IP is changed from {ipdns} to {ipwan}")
+        dnspod.update("@", ipwan)
+    else:
+        logger.info(f"IP unchanged {ipwan}")
 
 
 if __name__ == '__main__':
-    ddns()
+    if len(sys.argv) != 3:
+        print("Usage: ddnspod.py <TOKEN> <DOMAIN_ID>", file=sys.stderr)
+        exit(1)
+    token = sys.argv[1]
+    domain_id = sys.argv[2]
+    ddns(token, domain_id)
+
