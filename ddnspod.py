@@ -17,9 +17,18 @@ class Dnspod:
         self.token = token
         self.domain_id = domain_id
 
+        self.base_url = "https://dnsapi.cn"
+        self.headers = {
+                "Content-type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
+                "User-Agent": "iosapk-ddns/2.1.0 (blindlf@hotmail.com)"
+        }
+
         # Get records
         data = {"login_token": token, "format": "json", "domain_id": domain_id}
-        r = requests.post("https://dnsapi.cn/Record.List", data = data)
+        r = requests.post(self.base_url + "/Record.List",
+                data = data, headers = self.headers)
+        print(r.text)
         self.records = r.json()
 
 
@@ -50,8 +59,9 @@ class Dnspod:
                 "value": ip,
                 "record_type": rtype,
                 "record_line": "默认"
-                }
-        r = requests.post("https://dnsapi.cn/Record.Modify", data = data)
+        }
+        r = requests.post(self.base_url + "/Record.Modify",
+                data = data, headers = self.headers)
         status = r.json()
         code = status["status"]["code"]
         if "1" == code:
@@ -68,8 +78,7 @@ def get_wan_ipv4():
 
 def ddns(token, domain_id):
     dnspod = Dnspod(token, domain_id)
-    logger.info("DNSPOD")
-    logger.info(dnspod.records)
+    logger.info(f"DNSPOD List: {dnspod.records}")
     ipdns = dnspod.get("@")
 
     ipwan = get_wan_ipv4()
