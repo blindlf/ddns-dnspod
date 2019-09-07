@@ -37,9 +37,27 @@ class Dnspod:
         return r["value"]
 
 
-    def update(self, domain, rtype='A'):
-        # TODO
-        pass
+    def update(self, domain, ip, rtype='A'):
+        r = self._find(domain, rtype)
+        if not r:
+            return
+        data = {
+                "login_token": token,
+                "format": "json",
+                "domain_id": domain_id,
+                "record_id": r["id"],
+                "sub_domain": domain,
+                "value": ip,
+                "record_type": rtype,
+                "record_line": "默认"
+                }
+        r = requests.post("https://dnsapi.cn/Record.Modify", data = data)
+        status = r.json()
+        code = status["status"]["code"]
+        if "1" == code:
+            return
+        logger.error(f"DNS modify error {status}")
+        return int(code)
 
 
 def get_wan_ipv4():
@@ -58,9 +76,10 @@ def ddns(token, domain_id):
 
     if ipdns != ipwan:
         logger.info(f"IP is changed from {ipdns} to {ipwan}")
-        dnspod.update("@", ipwan)
+        return dnspod.update("@", ipwan)
     else:
         logger.info(f"IP unchanged {ipwan}")
+        return 0
 
 
 if __name__ == '__main__':
@@ -69,5 +88,5 @@ if __name__ == '__main__':
         exit(1)
     token = sys.argv[1]
     domain_id = sys.argv[2]
-    ddns(token, domain_id)
+    exit(ddns(token, domain_id))
 
